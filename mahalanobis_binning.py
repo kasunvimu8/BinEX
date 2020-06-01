@@ -29,6 +29,34 @@ def calculate_mahalanobis_dist (x=None, data=None, cov=None) :
     mahal = np.dot(left_term, x_minus_mu.T)
     return mahal.diagonal()
 
+def getLableForBinsDF (binned_dataframe, taxons) :
+    Allbins = binned_dataframe.drop_duplicates(subset='bin', keep="last").reset_index(drop=True)
+    rows_n = Allbins['bin'].to_list()
+    
+    Alltaxons = taxons.drop_duplicates(subset='Actual taxon', keep="last").reset_index(drop=True)
+    cols_n = Alltaxons['Actual taxon'].to_list()
+    arr = np.zeros((len(rows_n),len(cols_n)))
+    
+    for k in range(len(rows_n)):
+        for j in range(len(cols_n)):
+            n = len(binned_dataframe[(binned_dataframe['bin'] == rows_n[k]) & (binned_dataframe['Actual taxon']==cols_n[j])])
+            arr[k][j] =n
+    
+    tax = []
+    for k in range(len(rows_n)):
+        max = 0
+        for j in range(len(cols_n)):            
+            if arr[k][j] >= max :
+                max = arr[k][j]
+                max_col_index = j
+        tax.append(cols_n[max_col_index])
+      
+    df_bin = pd.DataFrame(data=rows_n)
+    df_bin['taxon'] = tax
+    df_bin.columns = ['bin', 'taxon']
+    
+    return df_bin;
+
 def run_model(name,arg1,arg2,arg3,arg4,arg5,arg6,arg7,out_file) :
 
     # Assuming it follows chi square distribution with 0.01 significance level and 4 degrees of freedom
@@ -36,213 +64,111 @@ def run_model(name,arg1,arg2,arg3,arg4,arg5,arg6,arg7,out_file) :
 
     critical_value = chi2.ppf((1-0.01), df=2)
     print(critical_value);
-
-    # UNBINNED DATA FEATURE EXTRACTION
+    
+    #  EXTRACTION OF FILES & PARAMETERS
     critical_value = 9
     length_consider = 1500
-    # name = 'sharon'
+    name = '10s'
+    name1 = '10s_new'
 
-    contig_nameread = ['id', 'Actual taxon','option','len']
-    file1 = pd.read_csv(arg1, delimiter = ',') # file contain details about all the contigs (argument 1)
-    unbinned_contig_count = len(file1.index)
-    dropindexNames1 = file1[ file1['length'] < length_consider ].index
-    file1.drop(dropindexNames1 , inplace=True)
-    file1.reset_index(inplace = True, drop = True)
-    # print(file1)
-
-    file2 = pd.read_csv(arg2, delimiter = ',') # file contain details about all the contigs (argument  2)
-    dropindexNames2 = file2[ file2['length'] < length_consider ].index
-    file2.drop(dropindexNames2 , inplace=True)
-    file2.reset_index(inplace = True, drop = True)
-    # print(file2)
-    df_tnf = file2.drop(['length', 'ns'], axis=1)
-    # print(df_tnf)
-
-    df_2Tunbinned = file1[['id', 'ofdeg', 'gc', 'length']]
-
-    # tnf pca for unbinned data
-    ids = df_tnf.loc[:,['id']] # Separating out the ids
-    tnt_frquencies = df_tnf.drop(['id'], axis=1).values # Separating out the tnf freq
-    tranformed_tnf = StandardScaler().fit_transform(tnt_frquencies) # Standardizing the features
-    pca = PCA(n_components=3)
-    principalComponents = pca.fit_transform(tranformed_tnf)
-    principalDf = pd.DataFrame(data = principalComponents, columns = ['principal component 1', 'principal component 2','principal component 3'])
-    principalDf['id'] = ids
-    df_2Tunbinned = df_2Tunbinned.merge(principalDf, on="id", how = 'inner') # add principle component cols
-    # df_2Tunbinned = file1[['id', 'ofdeg', 'gc', 'length']];
-    # print(df_2Tunbinned.head(10))
-
-    # BINNED DATA FEATURE EXTRACTION
-
-    binnedFile = pd.read_csv(arg3) # binned file (argument 3)
-    df_2Tbinned = binnedFile[['id', 'ofdeg', 'gc', 'length','bin']]
-    file4 = pd.read_csv(arg4, delimiter = ',') # file contain details about all the contigs (argument 4)
-    df_tnf_binned = file4.drop(['length', 'ns'], axis=1)
-
-    # tnf pca for binned data
-    ids = df_tnf_binned.loc[:,['id']] # Separating out the ids
-    tnt_frquencies = df_tnf_binned.drop(['id'], axis=1).values # Separating out the tnf freq
-    tranformed_tnf = StandardScaler().fit_transform(tnt_frquencies) # Standardizing the features
-    pca = PCA(n_components=3)
-    principalComponents = pca.fit_transform(tranformed_tnf)
-    principalDf = pd.DataFrame(data = principalComponents, columns = ['principal component 1', 'principal component 2','principal component 3'])
-    principalDf['id'] = ids
-    df_2Tbinned = df_2Tbinned.merge(principalDf, on="id", how = 'inner') # add principle component cols
-    # print(df_2Tbinned.head(10))
-
-    file3 =  pd.read_csv(arg5, delimiter = '\t', names=contig_nameread, header=None) # file contain names (argument 5)
-    df_names = file3.iloc[: , [0, 1]]
-
-    binned_contig_count = len(binnedFile.index)
-
+    df_2Tunbinned = pd.read_csv('sample_data/'+name1+'/'+name+'_unbinned_contigs_features.csv') # unbinned file
+    df_2Tbinned = pd.read_csv('sample_data/'+name1+'/'+name+'_binned_contigs_features.csv') # binned file
+    taxon_file = pd.read_csv('sample_data/'+name1+'/'+name+'_taxon.csv', names=['id','Actual taxon'], header=None) # unbinned file
+   
     # COMPUTATION
 
     df= df_2Tunbinned # for debugging   
     bins = df_2Tbinned['bin'].unique() # get the bins
     bins_array = []
     ignore_bins = []
-    
+
     for bin in bins : # preposessing part handle
-      if ((df_2Tbinned['bin'] == bin).sum()> 20):
-        bins_array.append(bin)
-      else:
-        ignore_bins.append(bin)
-    
-    #print(len(ignore_bins))
-    #print(ignore_bins)
+        if ((df_2Tbinned['bin'] == bin).sum()> 20):
+            bins_array.append(bin)
+        else:
+            ignore_bins.append(bin)
+
     i = 0
-    newdf = pd.DataFrame(columns=['id', 'ofdeg', 'gc', 'length','bin'])
+    newdf = pd.DataFrame(columns=['id', 'ofdeg', 'gc', 'length','bin']) # this df contain newly binned contig
     mahala_dist = []
 
-    while i < len(df.index): 
-         row = df.loc[i,]
-         lowest_variance = sys.float_info.max
-         assigned_bin = None
-         goodForBin = 0
-         distance = None
-         minD = sys.float_info.max # this variable for store each unbinned contigs mahalanobis dist
+    while i < len(df.index):
+        row = df.loc[i,]
+        lowest_variance = sys.float_info.max
+        assigned_bin = None
+        goodForBin = 0
+        distance = None
+        minD = sys.float_info.max; # this variable for store each unbinned contigs mahalanobis dist
         
-         for bin in bins_array :
-             label_bin = calculate_binwise_dist(bin,df_2Tbinned)
-             df1 = label_bin[['id', 'ofdeg', 'gc', 'length','principal component 1', 'principal component 2','principal component 3']].append(row, ignore_index=True) # add each unbinned contigs to bin and calculate distance
-             df2 = df1[['ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']]
-             df1['mahala'] = calculate_mahalanobis_dist(x=df2, data=df2[['ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']]) #dataframe with distance column
-             dist = df1.loc[df1.index[-1], "mahala"]
-             d = dist
+        for bin in bins_array :
+            label_bin = calculate_binwise_dist(bin)
+            df1 = label_bin[['id','length', 'ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']].append(row, ignore_index=True) # add each unbinned contigs to bin and calculate distance
+            df2 = df1[['ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']]
+            df1['mahala'] = calculate_mahalanobis_dist(x=df2, data=df2[['ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']]) #dataframe with distance column
+            dist = df1.loc[df1.index[-1], "mahala"]
+            d = dist
+            if d < minD : # get the minimum mahalanobis dist
+                minD = d
             
-             if d < minD : # get the minimum mahalanobis dist
-                 minD = d
-            
-             if dist < critical_value : # this will check whether contig has smaller distance or not
-                 goodForBin = 1
-                 x = dist; # contig mahalanobis distances
-                 m = df1['mahala'].mean();  # mean
-                 n = len(df1['mahala'].index); #sample number 
-                 variance = (x-m)*(x-m) / n 
+            if dist < critical_value : # this will check whether contig has smaller distance or not
+                goodForBin = 1
+                x = dist; # contig mahalanobis distances
+                m = df1['mahala'].mean();  # mean
+                n = len(df1['mahala'].index); #sample number 
+                variance = (x-m)*(x-m) / n 
                 
-                 if variance < lowest_variance :
-                     lowest_variance = variance
-                     assigned_bin = bin
-                     distance = dist
-         i += 1
-        
-         if goodForBin == 1 : # contigs bin in our model
-             row['bin'] = assigned_bin
-             row['mahala'] = distance
-             newdf = newdf.append(row, ignore_index=True)
-        
-         mahala_dist.append(minD)
+                if variance < lowest_variance :
+                    lowest_variance = variance
+                    assigned_bin = bin
 
+               
+    binned_data_with_taxon = df_2Tbinned.merge(taxon_file, on="id", how = 'left')
+    bins_from_intial = getLableForBinsDF(binned_data_with_taxon,taxon_file) #rows bins, columns taxons
+
+
+    df_2Tbinned = df_2Tbinned.merge(bins_from_intial, on="bin", how = 'inner')
+    df_2Tbinned = df_2Tbinned.merge(taxon_file, on="id", how = 'inner')
+    df_2Tbinned['Is prediction correct']= (df_2Tbinned['taxon']==df_2Tbinned['Actual taxon'])
+
+    true_prediction_2t = df_2Tbinned['Is prediction correct'].values.sum() # true count
+    false_prediction_2t = (~df_2Tbinned['Is prediction correct']).values.sum() # false count
+    binned_count_2t = true_prediction_2t + false_prediction_2t
+
+    accuracy_2t = 100 * true_prediction_2t / binned_count_2t
+    print("Binning accuracy in 2t method:% 5.2f" % accuracy_2t, "%")
+
+    per_of_contig_binned_2t = 100 * len(df_2Tbinned.index)/(len(df_2Tunbinned.index) +len(df_2Tbinned.index))
+    print("percentage contig bin in 2t :% 5.2f" % per_of_contig_binned_2t,"%")
+    
     if newdf.empty:
         print('Does not bin any contig')
-    
+
     else :
-        newdf[['id','bin']].to_csv(out_file, index=False)
-        newdf = newdf.merge(df_names, on="id", how = 'left')
-
-        # print(newdf)
-        # print(newdf[['id', 'bin','mahala', 'Actual taxon']]); 
-        pd.options.mode.chained_assignment = None  # default='warn'
-        df['mahala'] = mahala_dist # assign distance for to column 'mahala' in df dataframe
-        # print(df)
-        # print(newdf)
-
-        # check results for dataset
-
-        summery = binnedFile.drop_duplicates(subset='bin', keep="last")
-        summery_of_bins = summery[['bin','taxon']]
-        summery_of_bins.reset_index(inplace = True, drop = True)
-        # print(summery_of_bins)
-        # print(type(summery_of_bins.iloc[0,0]))
-
-        # get the bin name as most number of contig reference
-        fname = 'sample_data/'+name+'/taxon_bins.csv'
-        # data = pd.read_csv(fname)                            
-        data = pd.read_csv(fname, index_col=0)
-        bins = list(data.columns)
-
-        tax = []
-        for bin in bins:
-            tax.append(data[bin].idxmax())
-
-        df_bin = pd.DataFrame(data=bins)
-        df_bin['taxon'] = tax
-        df_bin.columns = ['bin', 'taxon']
-        df_bin['bin'].astype('int64')
-        # print (df_bin) 
-        # print(type(summery_of_bins.iloc[0,0]))
-
-        # there is problem, should solve
-
-        # print(df_bin)
-        # print(summery_of_bins)
-        # print(df_bin)
-        # print(newdf)
-        df_bin['bin'] = df_bin['bin'].astype(int)
-        results = newdf.merge(df_bin, on="bin", how = 'inner')
-
-        results = results[['id','length','bin','mahala','taxon','Actual taxon']]
-        results.columns = ['id','length','bin','mahala','taxon','Actual taxon']
-        results['Is prediction correct']= (results['taxon']==results['Actual taxon'])
-
+        final_out = pd.concat([newdf[['id','bin']], df_2Tbinned[['id','bin']]], ignore_index=True)
+        final_out.to_csv('sample_data/'+name1+'/'+name+'_final_ouput.csv', index=False,header=True)
+        
+        # check if file is given    
+        results = newdf.merge(bins_from_intial, on="bin", how = 'left').reset_index(drop=True)
+        results = results.merge(taxon_file, on="id", how = 'left').reset_index(drop=True)
 
         results = results[['id','length','bin','mahala','taxon','Actual taxon']]
         results['Is prediction correct']= (results['taxon']==results['Actual taxon'])
-        # print(results)
+
+        results = results[['id','length','bin','mahala','taxon','Actual taxon']]
+        results['Is prediction correct']= (results['taxon']==results['Actual taxon'])
 
         true_prediction = results['Is prediction correct'].values.sum() # true count
         false_prediction = (~results['Is prediction correct']).values.sum() # false count
         binned_count_our_model = false_prediction + true_prediction
-        # print(binned_count_our_model)
 
-               
-    results_2t_df = pd.read_csv('sample_data/'+name+'/'+name+'_output.L2_BINS', delimiter = '\t', names=['id', 'bin'])
-    # print(results_2t_df)
-    results_2t_df = results_2t_df.merge(df_bin, on="bin", how = 'inner')
-    results_2t_df = results_2t_df.merge(df_names, on="id", how = 'inner')
-    results_2t_df['Is prediction correct']= (results_2t_df['taxon']==results_2t_df['Actual taxon'])
-    # print(results_2t_df)
-    true_prediction_2t = results_2t_df['Is prediction correct'].values.sum() # true count
-    false_prediction_2t = (~results_2t_df['Is prediction correct']).values.sum() # false count
-    binned_count_our_model_2t = true_prediction_2t + false_prediction_2t
-    
-    print(results_2t_df)
-    accuracy_2t = 100 * true_prediction_2t / binned_count_our_model_2t
-    print("Binning accuracy in 2t method:% 5.2f" % accuracy_2t, "%")
+        accuracy = 100 * (true_prediction + true_prediction_2t) / (binned_count_our_model + binned_count_2t)
+        print("Binning accuracy in proposed model:% 5.2f" % accuracy, "%")
 
-    ac1 = 100 * len(df_2Tbinned.index)/(len(df_2Tunbinned.index) +len(df_2Tbinned.index))
-    print("percentage contig bin in 2T:% 5.2f" % ac1,"%")
-    
-    if (newdf.empty) :
-        print("Does not bin any contig.Accuracy and % bin are unchanged")
-    else :
-        print(results)
-        ac1 = 100 * (len(newdf.index)+len(df_2Tbinned.index))/(len(df_2Tunbinned.index) +len(df_2Tbinned.index))
-        print("percentage contig bin in 2T and our model :% 5.2f" % ac1,"%")
+        per_of_contig_binned = 100 * (len(newdf.index)+len(df_2Tbinned.index))/(len(df_2Tunbinned.index) +len(df_2Tbinned.index))
+        print("percentage contig bin in 2T and our model :% 5.2f" % per_of_contig_binned,"%")
         
-        accuracy = 100 * (true_prediction+true_prediction_2t) / (binned_count_our_model+binned_count_our_model_2t)
-        print("Binning accuracy in our model:% 5.2f" % accuracy, "%")
-    
+        
+        
 #single running
 
 arg1 ='sample_data/cami2/cami2_unbinned_contigs.OFDEG'
@@ -252,6 +178,7 @@ arg4 ='sample_data/cami2/cami2_view2.n4'
 arg5 ='sample_data/cami2/sim.contig.ans'
 arg6 ='sample_data/cami2/taxon_bins.csv'
 arg7 ='sample_data/cami2/cami2_output.L2_BINS'
+
 arg8 ='sample_data/cami2/cami2_model_results.csv'
 
 # run the script as following
