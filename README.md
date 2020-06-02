@@ -9,6 +9,7 @@ Run the script
 $python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv taxon.csv final_ouput.csv
 
 
+
 argument 1 : dataset name (ex : '10s')
 
 argument 2 : initial binning method feature file (ex : binned_contigs_features.csv)
@@ -18,6 +19,7 @@ argument 3 : unbinned contigs feature file (ex : unbinned_contigs_features.csv)
 argument 4 : taxon file (ex : taxon.csv)
 
 argument 5 : final output file (ex :final_ouput.csv)
+
 
 
 * sample dataset in shown in the test folder.
