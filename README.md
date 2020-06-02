@@ -42,3 +42,8 @@ Run the script
 * final output will display following format csv file
              
       output file => [id, bin]
+
+
+* PythonTestBed.java file is there to run the script using java.(usefull for web applications). If it doesn't need (for normal run), make
+            
+      testBedEnable = 0
