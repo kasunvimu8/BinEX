@@ -22,6 +22,12 @@ argument 5 : final output file (ex :final_ouput.csv)
 
 * sample dataset in shown in the test folder.
 
+* feature files for unbinned contigs and binned contigs should follow following structure.
+      
+      For binned feature file headers => [contig_id, contig_length, bin , feature_1, feature_2,....., feature_N ]
+      
+      For unbinned feature file headers => [contig_id, contig_length, feature_1, feature_2,....., feature_N ]
+
 * argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script and get the output.
 
 * you can provide the relative paths of those files if needed.
