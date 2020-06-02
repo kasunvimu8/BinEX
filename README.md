@@ -20,8 +20,8 @@ argument 4 : taxon file (ex : taxon.csv)
 argument 5 : final output file (ex :final_ouput.csv)
 
 
-*sample dataset in shown in the test folder.
+* sample dataset in shown in the test folder.
 
-*argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script.
+* argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script.
 
-*you can provide the relative paths of those files if needed.
+* you can provide the relative paths of those files if needed.
