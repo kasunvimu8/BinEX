@@ -5,9 +5,9 @@ Run the script
 ------------
 
 * run the python script without taxonomic label data
+
 $python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv taxon.csv final_ouput.csv
 
-in here ==>
 
 argument 1 : dataset name (ex : '10s')
 
@@ -22,6 +22,6 @@ argument 5 : final output file (ex :final_ouput.csv)
 
 * sample dataset in shown in the test folder.
 
-* argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script.
+* argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script and get the output.
 
 * you can provide the relative paths of those files if needed.
