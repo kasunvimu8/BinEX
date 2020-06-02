@@ -6,7 +6,8 @@ Run the script
 
 * run the python script without taxonomic label data
 
-$python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv taxon.csv final_ouput.csv
+      $python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv taxon.csv final_ouput.csv
+
 
 
       argument 1 : dataset name (ex : '10s')
