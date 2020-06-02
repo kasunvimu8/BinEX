@@ -57,12 +57,23 @@ def getLableForBinsDF (binned_dataframe, taxons) :
     
     return df_bin;
 
+def generateConsoleOutput (bins,df_2Tbinned,df_newbinned) :    
+    print("no_of_bins:",len(bins))
+    
+    for bin in bins :
+        count_pre = (df_2Tbinned['bin'] == bin).sum()
+        count_after = count_pre + (df_newbinned['bin'] == bin).sum()
+        
+        print("bin_",bin,"_no_of_binned_pre:",count_pre)
+        print("bin_",bin,"_no_of_binned_new:",count_after)
+
 def run_model(argv) :
 
     #  EXTRACTION OF FILES & PARAMETERS
     critical_value = 9
     length_consider = 1500
     taxon_file = None
+    testBedEnable = 1
     
     if (len(argv) == 5) :
         name = argv[1]
@@ -85,7 +96,7 @@ def run_model(argv) :
     df= df_2Tunbinned # for debugging   
     bins = df_2Tbinned['bin'].unique() # get the bins
     headers_binned = list(df_2Tbinned.columns.values)
-    headers_unbinned = list(df_2Tunbinned.columns.values)
+    headers_unbinned = list(df.columns.values)
     features = headers_unbinned[2:]
 
     bins_array = []
@@ -139,7 +150,10 @@ def run_model(argv) :
 
         mahala_dist.append(minD)
 
-
+    if testBedEnable == 1 :
+        generateConsoleOutput(bins,df_2Tbinned,newdf);
+        
+    
     if newdf.empty:
         print('Does not bin any contig')
 
