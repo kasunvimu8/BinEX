@@ -84,6 +84,10 @@ def run_model(argv) :
 
     df= df_2Tunbinned # for debugging   
     bins = df_2Tbinned['bin'].unique() # get the bins
+    headers_binned = list(df_2Tbinned.columns.values)
+    headers_unbinned = list(df_2Tunbinned.columns.values)
+    features = headers_unbinned[2:]
+
     bins_array = []
     ignore_bins = []
 
@@ -94,9 +98,9 @@ def run_model(argv) :
             ignore_bins.append(bin)
 
     i = 0
-    newdf = pd.DataFrame(columns=['id', 'ofdeg', 'gc', 'length','bin']) # this df contain newly binned contig
+    newdf = pd.DataFrame(columns=headers_binned) # this df contain newly binned contig
     mahala_dist = []
-
+    
     while i < len(df.index):
         row = df.loc[i,]
         lowest_variance = sys.float_info.max
@@ -107,9 +111,9 @@ def run_model(argv) :
         
         for bin in bins_array :
             label_bin = calculate_binwise_dist(bin, df_2Tbinned)
-            df1 = label_bin[['id','length', 'ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']].append(row, ignore_index=True) # add each unbinned contigs to bin and calculate distance
-            df2 = df1[['ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']]
-            df1['mahala'] = calculate_mahalanobis_dist(x=df2, data=df2[['ofdeg', 'gc','principal component 1', 'principal component 2','principal component 3']]) #dataframe with distance column
+            df1 = label_bin[headers_unbinned].append(row, ignore_index=True) # add each unbinned contigs to bin and calculate distance
+            df2 = df1[features]
+            df1['mahala'] = calculate_mahalanobis_dist(x=df2, data=df2[features]) #dataframe with distance column
             dist = df1.loc[df1.index[-1], "mahala"]
             d = dist
             if d < minD : # get the minimum mahalanobis dist
@@ -125,6 +129,16 @@ def run_model(argv) :
                 if variance < lowest_variance :
                     lowest_variance = variance
                     assigned_bin = bin
+                    
+        i += 1
+        
+        if goodForBin == 1 : # contigs bin in our model
+            row['bin'] = assigned_bin
+            row['mahala'] = distance
+            newdf = newdf.append(row, ignore_index=True)
+
+        mahala_dist.append(minD)
+
 
     if newdf.empty:
         print('Does not bin any contig')
@@ -187,8 +201,8 @@ def run_model(argv) :
 if __name__ == '__main__':
     start = time.time()
     run_model(sys.argv)        
-    end_time = time.time()
-    t = start-end
+    end = time.time()
+    t = end-start
     print("Average time taken for execution "+ str(int(t/60))+" min " +str(int(t%60))+" sec")
 
 
