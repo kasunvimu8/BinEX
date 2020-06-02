@@ -16,7 +16,7 @@ Run the script
 
       argument 3 : unbinned contigs feature file (ex : unbinned_contigs_features.csv)
 
-      argument 4 : taxon file (ex : taxon.csv)
+      argument 4 : taxon file [this  contain the taxons of all contigs] (ex : taxon.csv )
 
       argument 5 : final output file (ex :final_ouput.csv)
 
