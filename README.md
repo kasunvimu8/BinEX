@@ -1,4 +1,4 @@
-# Datadriven_Metagenomic_binning
+# BinEX
 Binning tool for improve binning percentage in existing binning methods
 
 Run the script
