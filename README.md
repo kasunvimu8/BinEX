@@ -31,4 +31,4 @@ Run the script
 
 * argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script and get the output.
 
-* you can provide the relative paths of those files if needed.
+* you can provide the relative paths or absolute path of files.
