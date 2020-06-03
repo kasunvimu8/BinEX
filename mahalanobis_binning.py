@@ -10,8 +10,8 @@ from sklearn.decomposition import PCA
 from matplotlib.gridspec import GridSpec
 import matplotlib.cm as cm
 
-def calculate_binwise_dist (label, df_2Tbinned) :
-    arr = df_2Tbinned[df_2Tbinned['bin'] == label]
+def calculate_binwise_dist (label, df_Initialbinned) :
+    arr = df_Initialbinned[df_Initialbinned['bin'] == label]
     return arr
 
 def calculate_mahalanobis_dist (x=None, data=None, cov=None) :
@@ -57,15 +57,18 @@ def getLableForBinsDF (binned_dataframe, taxons) :
     
     return df_bin;
 
-def generateConsoleOutput (bins,df_2Tbinned,df_newbinned) :    
+def generateConsoleOutput (bins,df_Initialbinned,df_newbinned) :    
+    print("start;")
     print("no_of_bins:",len(bins))
     
     for bin in bins :
-        count_pre = (df_2Tbinned['bin'] == bin).sum()
+        count_pre = (df_Initialbinned['bin'] == bin).sum()
         count_after = count_pre + (df_newbinned['bin'] == bin).sum()
         
         print("bin_",bin,"_no_of_binned_pre:",count_pre)
         print("bin_",bin,"_no_of_binned_new:",count_after)
+        
+    print("end;")
 
 def run_model(argv) :
 
@@ -77,14 +80,14 @@ def run_model(argv) :
     
     if (len(argv) == 5) :
         name = argv[1]
-        df_2Tbinned = pd.read_csv(argv[2])
-        df_2Tunbinned = pd.read_csv(argv[3])
+        df_Initialbinned = pd.read_csv(argv[2])
+        df_Initialunbinned = pd.read_csv(argv[3])
         output = argv[4]
         
     elif (len (sys.argv) == 6) :
         name = argv[1]
-        df_2Tbinned = pd.read_csv(argv[2])
-        df_2Tunbinned = pd.read_csv(argv[3])
+        df_Initialbinned = pd.read_csv(argv[2])
+        df_Initialunbinned = pd.read_csv(argv[3])
         taxon_file = pd.read_csv(argv[4], names=['id','Actual taxon'], header=None)
         output = argv[5]
     else:        
@@ -93,9 +96,9 @@ def run_model(argv) :
     
     # COMPUTATION
 
-    df= df_2Tunbinned # for debugging   
-    bins = df_2Tbinned['bin'].unique() # get the bins
-    headers_binned = list(df_2Tbinned.columns.values)
+    df= df_Initialunbinned # for debugging   
+    bins = df_Initialbinned['bin'].unique() # get the bins
+    headers_binned = list(df_Initialbinned.columns.values)
     headers_unbinned = list(df.columns.values)
     features = headers_unbinned[2:]
 
@@ -103,7 +106,7 @@ def run_model(argv) :
     ignore_bins = []
 
     for bin in bins : # preposessing part handle
-        if ((df_2Tbinned['bin'] == bin).sum()> 20):
+        if ((df_Initialbinned['bin'] == bin).sum()> 20):
             bins_array.append(bin)
         else:
             ignore_bins.append(bin)
@@ -121,7 +124,7 @@ def run_model(argv) :
         minD = sys.float_info.max; # this variable for store each unbinned contigs mahalanobis dist
         
         for bin in bins_array :
-            label_bin = calculate_binwise_dist(bin, df_2Tbinned)
+            label_bin = calculate_binwise_dist(bin, df_Initialbinned)
             df1 = label_bin[headers_unbinned].append(row, ignore_index=True) # add each unbinned contigs to bin and calculate distance
             df2 = df1[features]
             df1['mahala'] = calculate_mahalanobis_dist(x=df2, data=df2[features]) #dataframe with distance column
@@ -151,14 +154,14 @@ def run_model(argv) :
         mahala_dist.append(minD)
 
     if testBedEnable == 1 :
-        generateConsoleOutput(bins,df_2Tbinned,newdf);
+        generateConsoleOutput(bins,df_Initialbinned,newdf);
         
     
     if newdf.empty:
         print('Does not bin any contig')
 
     else :
-        final_out = pd.concat([newdf[['id','bin']], df_2Tbinned[['id','bin']]], ignore_index=True)
+        final_out = pd.concat([newdf[['id','bin']], df_Initialbinned[['id','bin']]], ignore_index=True)
         final_out.to_csv(output, index=False,header=True)
         
     if taxon_file is None :
@@ -166,22 +169,22 @@ def run_model(argv) :
         exit()
     else :        
     
-        binned_data_with_taxon = df_2Tbinned.merge(taxon_file, on="id", how = 'left')
+        binned_data_with_taxon = df_Initialbinned.merge(taxon_file, on="id", how = 'left')
         bins_from_intial = getLableForBinsDF(binned_data_with_taxon,taxon_file) #rows bins, columns taxons
 
-        df_2Tbinned = df_2Tbinned.merge(bins_from_intial, on="bin", how = 'inner')
-        df_2Tbinned = df_2Tbinned.merge(taxon_file, on="id", how = 'inner')
-        df_2Tbinned['Is prediction correct']= (df_2Tbinned['taxon']==df_2Tbinned['Actual taxon'])
+        df_Initialbinned = df_Initialbinned.merge(bins_from_intial, on="bin", how = 'inner')
+        df_Initialbinned = df_Initialbinned.merge(taxon_file, on="id", how = 'inner')
+        df_Initialbinned['Is prediction correct']= (df_Initialbinned['taxon']==df_Initialbinned['Actual taxon'])
 
-        true_prediction_2t = df_2Tbinned['Is prediction correct'].values.sum() # true count
-        false_prediction_2t = (~df_2Tbinned['Is prediction correct']).values.sum() # false count
-        binned_count_2t = true_prediction_2t + false_prediction_2t
+        true_prediction_Initial = df_Initialbinned['Is prediction correct'].values.sum() # true count
+        false_prediction_Initial = (~df_Initialbinned['Is prediction correct']).values.sum() # false count
+        binned_count_Initial = true_prediction_Initial + false_prediction_Initial
 
-        accuracy_2t = 100 * true_prediction_2t / binned_count_2t
-        print("Binning accuracy in 2t method:% 5.2f" % accuracy_2t, "%")
+        accuracy_Initial = 100 * true_prediction_Initial / binned_count_Initial
+        print("Binning accuracy in Initial method:% 5.2f" % accuracy_Initial, "%")
 
-        per_of_contig_binned_2t = 100 * len(df_2Tbinned.index)/(len(df_2Tunbinned.index) +len(df_2Tbinned.index))
-        print("percentage contig bin in 2t :% 5.2f" % per_of_contig_binned_2t,"%")
+        per_of_contig_binned_Initial = 100 * len(df_Initialbinned.index)/(len(df_Initialunbinned.index) +len(df_Initialbinned.index))
+        print("percentage contig bin in Initial :% 5.2f" % per_of_contig_binned_Initial,"%")
         
         if newdf.empty:
             print('Does not bin any contigs in our method')
@@ -202,11 +205,11 @@ def run_model(argv) :
             false_prediction = (~results['Is prediction correct']).values.sum() # false count
             binned_count_our_model = false_prediction + true_prediction
 
-            accuracy = 100 * (true_prediction + true_prediction_2t) / (binned_count_our_model + binned_count_2t)
+            accuracy = 100 * (true_prediction + true_prediction_Initial) / (binned_count_our_model + binned_count_Initial)
             print("Binning accuracy in proposed model:% 5.2f" % accuracy, "%")
 
-            per_of_contig_binned = 100 * (len(newdf.index)+len(df_2Tbinned.index))/(len(df_2Tunbinned.index) +len(df_2Tbinned.index))
-            print("percentage contig bin in 2T and our model :% 5.2f" % per_of_contig_binned,"%")
+            per_of_contig_binned = 100 * (len(newdf.index)+len(df_Initialbinned.index))/(len(df_Initialunbinned.index) +len(df_Initialbinned.index))
+            print("percentage contig bin in Initial and our model :% 5.2f" % per_of_contig_binned,"%")
         
               
 # single running run the script as following
