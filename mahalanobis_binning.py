@@ -31,8 +31,8 @@ def calculate_mahalanobis_dist (x=None, data=None, cov=None) :
 
 def getLableForBinsDF (binned_dataframe, taxons) :
     Allbins = binned_dataframe.drop_duplicates(subset='bin', keep="last").reset_index(drop=True)
-    rows_n = Allbins['bin'].to_list()
-    
+    rows_n = Allbins['bin'].to_list()    
+
     Alltaxons = taxons.drop_duplicates(subset='Actual taxon', keep="last").reset_index(drop=True)
     cols_n = Alltaxons['Actual taxon'].to_list()
     arr = np.zeros((len(rows_n),len(cols_n)))
@@ -77,6 +77,7 @@ def run_model(argv) :
     length_consider = 1500
     taxon_file = None
     testBedEnable = 1
+    notAvalibleTaxonsCount = 0
     
     if (len(argv) == 5) :
         name = argv[1]
@@ -114,7 +115,7 @@ def run_model(argv) :
     i = 0
     newdf = pd.DataFrame(columns=headers_binned) # this df contain newly binned contig
     mahala_dist = []
-    
+
     while i < len(df.index):
         row = df.loc[i,]
         lowest_variance = sys.float_info.max
@@ -122,7 +123,7 @@ def run_model(argv) :
         goodForBin = 0
         distance = None
         minD = sys.float_info.max; # this variable for store each unbinned contigs mahalanobis dist
-        
+
         for bin in bins_array :
             label_bin = calculate_binwise_dist(bin, df_Initialbinned)
             df1 = label_bin[headers_unbinned].append(row, ignore_index=True) # add each unbinned contigs to bin and calculate distance
@@ -181,10 +182,10 @@ def run_model(argv) :
         binned_count_Initial = true_prediction_Initial + false_prediction_Initial
 
         accuracy_Initial = 100 * true_prediction_Initial / binned_count_Initial
-        print("Binning accuracy in Initial method:% 5.2f" % accuracy_Initial, "%")
+        print("Binning accuracy in Initial method:% 5.2f" % accuracy_Initial)
 
         per_of_contig_binned_Initial = 100 * len(df_Initialbinned.index)/(len(df_Initialunbinned.index) +len(df_Initialbinned.index))
-        print("percentage contig bin in Initial :% 5.2f" % per_of_contig_binned_Initial,"%")
+        print("percentage contig bin in Initial :% 5.2f" % per_of_contig_binned_Initial)
         
         if newdf.empty:
             print('Does not bin any contigs in our method')
@@ -197,19 +198,17 @@ def run_model(argv) :
 
             results = results[['id','length','bin','mahala','taxon','Actual taxon']]
             results['Is prediction correct']= (results['taxon']==results['Actual taxon'])
-
-            results = results[['id','length','bin','mahala','taxon','Actual taxon']]
-            results['Is prediction correct']= (results['taxon']==results['Actual taxon'])
+            notAvalibleTaxonsCount = results['Actual taxon'].isnull().sum()
 
             true_prediction = results['Is prediction correct'].values.sum() # true count
-            false_prediction = (~results['Is prediction correct']).values.sum() # false count
+            false_prediction = (~results['Is prediction correct']).values.sum() - notAvalibleTaxonsCount  # real false count
             binned_count_our_model = false_prediction + true_prediction
 
             accuracy = 100 * (true_prediction + true_prediction_Initial) / (binned_count_our_model + binned_count_Initial)
-            print("Binning accuracy in proposed model:% 5.2f" % accuracy, "%")
+            print("Binning accuracy in proposed model:% 5.2f" % accuracy)
 
             per_of_contig_binned = 100 * (len(newdf.index)+len(df_Initialbinned.index))/(len(df_Initialunbinned.index) +len(df_Initialbinned.index))
-            print("percentage contig bin in Initial and our model :% 5.2f" % per_of_contig_binned,"%")
+            print("percentage contig bin in Initial and our model :% 5.2f" % per_of_contig_binned)
         
               
 # single running run the script as following
@@ -220,6 +219,6 @@ if __name__ == '__main__':
     run_model(sys.argv)        
     end = time.time()
     t = end-start
-    print("Average time taken for execution "+ str(int(t/60))+" min " +str(int(t%60))+" sec")
+    # print("Average time taken for execution "+ str(int(t/60))+" min " +str(int(t%60))+" sec")
 
 
