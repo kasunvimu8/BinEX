@@ -72,20 +72,31 @@ def generateConsoleOutput (bins,df_Initialbinned,df_newbinned) :
 
 def run_model(argv) :
 
-    #  EXTRACTION OF FILES & PARAMETERS
+    #  DEFAULT PARAMETERS
     critical_value = 9
-    length_consider = 1500
+    filtering_length = 1500
     taxon_file = None
     testBedEnable = 1
     notAvalibleTaxonsCount = 0
+    p_count = 0
     
-    if (len(argv) == 5) :
+    # GET OPTION PARAMETERS    
+    opts = [opt for opt in argv[1:] if opt.startswith("-")]
+    
+    if "--p" in opts:
+        index_p = argv.index("--p")
+        filtering_length = int(argv[index_p+1])
+        critical_value = float(argv[index_p+2])
+        p_count = 3
+
+    # EXTRACT THE DATAFRAMES
+    if (len(argv)-p_count == 5) : # only binned and unbinned contig files available case 
         name = argv[1]
         df_Initialbinned = pd.read_csv(argv[2])
         df_Initialunbinned = pd.read_csv(argv[3])
         output = argv[4]
         
-    elif (len (sys.argv) == 6) :
+    elif (len(sys.argv)-p_count == 6) : # binned, unbinned and taxon files available case
         name = argv[1]
         df_Initialbinned = pd.read_csv(argv[2])
         df_Initialunbinned = pd.read_csv(argv[3])
@@ -94,7 +105,13 @@ def run_model(argv) :
     else:        
         print ("Incorrect arguments / Missing arguments")
         exit()
-    
+        
+    # PRE PROCESSING PART
+
+    dropindex = df_Initialunbinned[ df_Initialunbinned['length'] < filtering_length ].index
+    df_Initialunbinned.drop(dropindex , inplace=True)
+    df_Initialunbinned.reset_index(inplace = True, drop = True)
+
     # COMPUTATION
 
     df= df_Initialunbinned # for debugging   
