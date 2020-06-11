@@ -4,9 +4,9 @@ Binning tool for improve binning percentage in existing binning methods
 Run the script
 ------------
 
-* run the python script without taxonomic label data
+* run the python script with taxonomic label data
 
-      $python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv taxon.csv final_ouput.csv
+      $python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv taxon.csv final_ouput.csv --p 1500 9
 
 
 
@@ -16,9 +16,15 @@ Run the script
 
       argument 3 : unbinned contigs feature file (ex : unbinned_contigs_features.csv)
 
-      argument 4 : taxon file [this contain the taxons of all contigs] (ex : taxon.csv )
+      argument 4 : taxon file [this contain the taxons of all contigs] (ex : taxon.csv )[OPTIONAL]
 
       argument 5 : final output file (ex :final_ouput.csv)
+      
+      argument 6 : indicate parameter selcting (ex: "--p") [OPTIONAL]
+      
+      argument 7 : filtering length (ex: 1500) [OPTIONAL]
+      
+      argument 8 : Critical value (ex: 9) [OPTIONAL]
 
 
 * sample dataset in shown in the test folder.
@@ -36,6 +42,17 @@ Run the script
 * argument 4 (taxon file) is needed to calculate accuracy and other properties of results. Even without that it is possible to run the script and get the output.
 
       $python mahalanobis_binning.py 10s binned_contigs_features.csv unbinned_contigs_features.csv final_ouput.csv
+      
+* You can pick the filtering length and another threshold value in command line option. Depending on those values the results may changes.The order of argument follow the following.
+
+       --p [filtering length] [critical value]
+      
+      eg :      
+       taxon file available case :
+            python mahalanobis_binning.py 10s sample_data/10s/10s_binned_contigs_features.csv  sample_data/10s/10s_unbinned_contigs_features.csv sample_data/10s/10s_taxon.csv sample_data/10s/10s_final_ouput.csv --p 1500 9
+            
+      taxon file not available case : 
+       python mahalanobis_binning.py 10s sample_data/10s/10s_binned_contigs_features.csv  sample_data/10s/10s_unbinned_contigs_features.csv sample_data/10s/10s_final_ouput.csv --p 1500 9
 
 * you can provide the relative paths or absolute path of files.
 
