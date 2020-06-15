@@ -69,6 +69,16 @@ def generateConsoleOutput (bins,df_Initialbinned,df_newbinned) :
         print("bin_",bin,"_no_of_binned_new:",count_after)
         
     print("end;")
+    
+def progress(count, total, status=''):
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+    
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s \t %s\r' % (bar, percents, '%', status))
+    sys.stdout.flush()
 
 def run_model(argv) :
 
@@ -78,7 +88,8 @@ def run_model(argv) :
     taxon_file = None
     testBedEnable = 1
     notAvalibleTaxonsCount = 0
-    p_count = 0
+    parameter_count = 0
+    progressBarEnable = 0
     
     # GET OPTION PARAMETERS    
     opts = [opt for opt in argv[1:] if opt.startswith("-")]
@@ -87,16 +98,16 @@ def run_model(argv) :
         index_p = argv.index("--p")
         filtering_length = int(argv[index_p+1])
         critical_value = float(argv[index_p+2])
-        p_count = 3
+        parameter_count = 3
 
     # EXTRACT THE DATAFRAMES
-    if (len(argv)-p_count == 5) : # only binned and unbinned contig files available case 
+    if (len(argv)-parameter_count == 5) : # only binned and unbinned contig files available case 
         name = argv[1]
         df_Initialbinned = pd.read_csv(argv[2])
         df_Initialunbinned = pd.read_csv(argv[3])
         output = argv[4]
         
-    elif (len(sys.argv)-p_count == 6) : # binned, unbinned and taxon files available case
+    elif (len(sys.argv)-parameter_count == 6) : # binned, unbinned and taxon files available case
         name = argv[1]
         df_Initialbinned = pd.read_csv(argv[2])
         df_Initialunbinned = pd.read_csv(argv[3])
@@ -132,8 +143,9 @@ def run_model(argv) :
     i = 0
     newdf = pd.DataFrame(columns=headers_binned) # this df contain newly binned contig
     mahala_dist = []
-
-    while i < len(df.index):
+    total_unbinned_contigs = len(df.index)
+    
+    while i < total_unbinned_contigs:
         row = df.loc[i,]
         lowest_variance = sys.float_info.max
         assigned_bin = None
@@ -170,6 +182,9 @@ def run_model(argv) :
             newdf = newdf.append(row, ignore_index=True)
 
         mahala_dist.append(minD)
+        
+        if progressBarEnable == 1 :
+            progress(i, total_unbinned_contigs, status='binEX in progress')
 
     if testBedEnable == 1 :
         generateConsoleOutput(bins,df_Initialbinned,newdf);
