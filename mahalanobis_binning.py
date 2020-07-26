@@ -198,7 +198,16 @@ def run_model(argv) :
         final_out.to_csv(output, index=False,header=True)
         
     if taxon_file is None :
-        print ("finish binning")
+       
+        per_of_contig_binned_Initial = 100 * len(df_Initialbinned.index)/total_contigs
+        per_of_contig_binned = 100 * (len(newdf.index)+len(df_Initialbinned.index))/total_contigs
+        accuracy_Initial = 0
+        accuracy = 0
+        
+        print("Binning accuracy in Initial method:% 5.2f" % accuracy_Initial)
+        print("percentage contig bin in Initial :% 5.2f" % per_of_contig_binned_Initial)
+        print("Binning accuracy in proposed model:% 5.2f" % accuracy)
+        print("percentage contig bin in Initial and our model :% 5.2f" % per_of_contig_binned)
         exit()
     else :        
     
